@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .nav { margin: 20px 0; padding: 10px 0; border-bottom: 2px solid #eee; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        .user-info { float: right; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Inventory Management</h1>
+    
+    <div class="nav">
+        <a href="{{ url_for('admin_dashboard') }}">← Back to Dashboard</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+        <span class="user-info">{{ current_user.username }}</span>
+    </div>
+
+    <table>
+        <tr><th>Name</th><th>Stock</th><th>Update</th></tr>
+        {% for p in products %}
+        <tr>
+            <form method="post">
+                <td>{{p.name}}</td>
+                <td>
+                    <input type="number" name="stock" value="{{p.stock}}">
+                    <input type="hidden" name="product_id" value="{{p.id}}">
+                </td>
+                <td><button>Save</button></td>
+            </form>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

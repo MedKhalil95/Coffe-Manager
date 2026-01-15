@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>POS System</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .user-info {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: #666;
+        font-size: 14px;
+    }
+    .user-info a {
+        margin-left: 10px;
+        color: #007bff;
+        text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<h1>☕ Coffee POS</h1>
+
+<div class="user-info">
+    {{ current_user.username }}
+    {% if current_user.is_admin %}
+        | <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+    {% endif %}
+    | <a href="{{ url_for('logout') }}">Logout</a>
+</div>
+
+<div class="pos">
+  <div class="products">
+    {% for p in products %}
+    <button onclick="add({{p.id}}, '{{p.name}}', {{p.price}})">
+      {{p.name}}<br>{{p.price}}$<br>Stock: {{p.stock}}
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="order">
+    <h2>Order</h2>
+    <ul id="items"></ul>
+    <h3>Total: $<span id="total">0</span></h3>
+    <button onclick="checkout()">PAY</button>
+  </div>
+</div>
+
+<script src="/static/js/pos.js"></script>
+</body>
+</html>
