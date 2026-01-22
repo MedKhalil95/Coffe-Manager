@@ -1,19 +1,18 @@
-from flask import Flask, app, redirect, url_for, render_template
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_required
-from models import db, User, Product, Sale
-
-from models import db, Admin
 import os
+from flask import Flask, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from models import db, Admin, User, Product, Sale
+
+# -------- FLASK SETUP --------
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "sqlite:///coffee_manager.db"
 )
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-# -------- FLASK SETUP --------
-
-
+# Initialize database
 db.init_app(app)
 
 # -------- LOGIN MANAGER --------
@@ -23,7 +22,7 @@ login_manager.login_view = "auth.login"
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return Admin.query.get(int(user_id))  # Only admins for now
 
 # -------- BLUEPRINTS --------
 from routes.auth import auth_bp
@@ -41,8 +40,7 @@ app.register_blueprint(products_bp)
 def home():
     return redirect(url_for("dashboard.dashboard"))
 
-
-# -------- INIT DB & CREATE ADM
+# -------- INIT DB & CREATE DEFAULT ADMINS --------
 with app.app_context():
     db.create_all()
 
@@ -63,4 +61,5 @@ with app.app_context():
 
 # -------- RUN --------
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Use 0.0.0.0 on Render for external access
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
