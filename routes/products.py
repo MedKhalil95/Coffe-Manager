@@ -1,106 +1,90 @@
+# routes/products.py - Simplified version
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
-from models import db, Product, Ingredient, ProductIngredient, Sale
+from flask_login import login_required, current_user
+from models import db, Product, Sale
+from datetime import datetime
 
-products_bp = Blueprint("products", __name__, url_prefix="/products")
+products_bp = Blueprint('products', __name__)
 
-# -------- LIST PRODUCTS --------
-@products_bp.route("/")
+@products_bp.route('/products')
 @login_required
 def list_products():
-    products = Product.query.all()
+    admin_id = current_user.id
+    products = Product.query.filter_by(admin_id=admin_id).all()
+    
+    for product in products:
+        product.total_sold = sum(s.quantity for s in product.sales if s.admin_id == admin_id)
+    
+    return render_template('products.html', products=products)
 
-    # Calculate total sold
-    for p in products:
-        sold = sum(s.quantity for s in p.sales) if p.sales else 0
-        p.total_sold = sold
-
-    return render_template("products.html", products=products)
-
-# -------- ADD PRODUCT --------
-@products_bp.route("/add", methods=["GET", "POST"])
+@products_bp.route('/products/add', methods=['GET', 'POST'])
 @login_required
 def add_product():
-    if request.method == "POST":
-        name = request.form["name"]
-        sell_price = float(request.form["sell_price"])
-        product = Product(name=name, sell_price=sell_price)
+    if request.method == 'POST':
+        name = request.form['name']
+        sell_price = float(request.form['sell_price'])
+        
+        # Check if product already exists for this admin
+        existing = Product.query.filter_by(name=name, admin_id=current_user.id).first()
+        if existing:
+            flash('Product already exists!', 'danger')
+            return redirect(url_for('products.add_product'))
+        
+        product = Product(
+            name=name,
+            sell_price=sell_price,
+            admin_id=current_user.id
+        )
         db.session.add(product)
         db.session.commit()
-        flash(f"Product '{name}' added successfully!", "success")
-        return redirect(url_for("products.list_products"))
-    return render_template("add_product.html")
+        flash('Product added!', 'success')
+        return redirect(url_for('products.list_products'))
+    
+    return render_template('add_product.html')
 
-# -------- EDIT PRODUCT --------
-@products_bp.route("/edit/<int:product_id>", methods=["GET", "POST"])
+@products_bp.route('/products/<int:product_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_product(product_id):
-    product = Product.query.get_or_404(product_id)
-    if request.method == "POST":
-        product.name = request.form["name"]
-        product.sell_price = float(request.form["sell_price"])
+    product = Product.query.filter_by(id=product_id, admin_id=current_user.id).first_or_404()
+    
+    if request.method == 'POST':
+        product.name = request.form['name']
+        product.sell_price = float(request.form['sell_price'])
         db.session.commit()
-        flash(f"Product '{product.name}' updated successfully!", "success")
-        return redirect(url_for("products.list_products"))
-    return render_template("edit_product.html", product=product)
+        flash('Product updated!', 'success')
+        return redirect(url_for('products.list_products'))
+    
+    return render_template('edit_product.html', product=product)
 
-# -------- DELETE PRODUCT --------
-@products_bp.route("/delete/<int:product_id>")
+@products_bp.route('/products/<int:product_id>/delete')
 @login_required
 def delete_product(product_id):
-    product = Product.query.get_or_404(product_id)
+    product = Product.query.filter_by(id=product_id, admin_id=current_user.id).first_or_404()
+    
+    # Delete related sales
+    Sale.query.filter_by(product_id=product_id, admin_id=current_user.id).delete()
+    
     db.session.delete(product)
     db.session.commit()
-    flash(f"Product '{product.name}' deleted!", "danger")
-    return redirect(url_for("products.list_products"))
+    flash('Product deleted!', 'success')
+    return redirect(url_for('products.list_products'))
 
-# -------- PRODUCT RECIPE (INGREDIENT USAGE) --------
-@products_bp.route("/recipe/<int:product_id>", methods=["GET", "POST"])
-@login_required
-def product_recipe(product_id):
-    product = Product.query.get_or_404(product_id)
-    ingredients = Ingredient.query.all()
-
-    if request.method == "POST":
-        ingredient_id = int(request.form["ingredient_id"])
-        qty_used = float(request.form["qty_used"])
-
-        # Update if already exists
-        existing = ProductIngredient.query.filter_by(
-            product_id=product.id, ingredient_id=ingredient_id
-        ).first()
-        if existing:
-            existing.qty_used = qty_used
-        else:
-            pi = ProductIngredient(
-                product_id=product.id,
-                ingredient_id=ingredient_id,
-                qty_used=qty_used
-            )
-            db.session.add(pi)
-        db.session.commit()
-        flash("Ingredient added/updated successfully!", "success")
-        return redirect(url_for("products.product_recipe", product_id=product.id))
-
-    recipe = ProductIngredient.query.filter_by(product_id=product.id).all()
-    return render_template(
-        "product_recipe.html",
-        product=product,
-        ingredients=ingredients,
-        recipe=recipe
-    )
-
-# -------- RECORD SALES --------
-@products_bp.route("/sale/<int:product_id>", methods=["GET", "POST"])
+@products_bp.route('/products/<int:product_id>/sale', methods=['GET', 'POST'])
 @login_required
 def add_sale(product_id):
-    product = Product.query.get_or_404(product_id)
-    if request.method == "POST":
-        quantity = int(request.form["quantity"])
-        sale = Sale(product_id=product.id, quantity=quantity)
+    product = Product.query.filter_by(id=product_id, admin_id=current_user.id).first_or_404()
+    
+    if request.method == 'POST':
+        quantity = int(request.form['quantity'])
+        
+        sale = Sale(
+            product_id=product_id,
+            quantity=quantity,
+            admin_id=current_user.id
+        )
         db.session.add(sale)
         db.session.commit()
-        flash(f"Recorded sale of {quantity} {product.name}(s).", "success")
-        return redirect(url_for("products.list_products"))
-
-    return render_template("add_sale.html", product=product)
+        flash(f'Sale of {quantity} {product.name}(s) recorded!', 'success')
+        return redirect(url_for('products.list_products'))
+    
+    return render_template('add_sale.html', product=product)

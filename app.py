@@ -1,8 +1,9 @@
+# app.py - Fixed version
 import os
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from models import db, Admin, User, Product, Sale
+from flask_login import LoginManager, current_user
+from models import db, Admin, Product, Sale, FixedCost  # Removed User and Ingredient imports
 
 # -------- FLASK SETUP --------
 app = Flask(__name__)
@@ -22,24 +23,38 @@ login_manager.login_view = "auth.login"
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Admin.query.get(int(user_id))  # Only admins for now
+    return Admin.query.get(int(user_id))
 
 # -------- BLUEPRINTS --------
+# app.py - Correct import order
+
+
+# ... config code ..
+
+# Import models AFTER app is created
+
+# Import blueprints AFTER models
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 from routes.costs import costs_bp
 from routes.products import products_bp
 
+# Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
-app.register_blueprint(costs_bp)
+app.register_blueprint(costs_bp)  # <-- THIS LINE MUST EXIST
 app.register_blueprint(products_bp)
-
 # -------- ROOT ROUTE --------
 @app.route("/")
 def home():
-    return redirect(url_for("dashboard.dashboard"))
-
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard.dashboard"))
+    return redirect(url_for("auth.login"))
+# Add this to app.py (temporarily)
+@app.route('/costs')
+def direct_costs():
+    """Direct route to costs for testing"""
+    return redirect(url_for('costs.list_costs'))
 # -------- INIT DB & CREATE DEFAULT ADMINS --------
 with app.app_context():
     db.create_all()
