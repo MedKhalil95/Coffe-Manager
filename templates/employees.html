@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h4>Employees</h4>
+
+<form method="POST" class="row g-2 mb-4">
+    <div class="col-md-4">
+        <input name="name" class="form-control" placeholder="Employee Name" required>
+    </div>
+    <div class="col-md-3">
+        <input type="number" name="salary" class="form-control" placeholder="Monthly Salary" required>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-success w-100">Add</button>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <tr>
+        <th>Name</th>
+        <th>Salary</th>
+    </tr>
+    {% for emp in employees %}
+    <tr>
+        <td>{{ emp.name }}</td>
+        <td>{{ emp.salary }} DT</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

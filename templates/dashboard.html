@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row g-4 mb-4">
+
+    <!-- Total Revenue -->
+    <div class="col-md-3">
+        <div class="card shadow text-center p-3">
+            <h6>Total Revenue</h6>
+            <h3 class="text-success">{{ total_sales|round(2) }} DT</h3>
+        </div>
+    </div>
+
+    <!-- Total Product Costs -->
+    <div class="col-md-3">
+        <div class="card shadow text-center p-3">
+            <h6>Total Product Costs</h6>
+            <h3 class="text-warning">{{ total_costs - (total_fixed_costs|default(0))|round(2) }} DT</h3>
+        </div>
+    </div>
+
+    <!-- Total Fixed Costs -->
+    <div class="col-md-3">
+        <div class="card shadow text-center p-3">
+            <h6>Total Fixed Costs</h6>
+            <h3 class="text-danger">{{ total_costs - (total_costs - (total_fixed_costs|default(0)))|round(2) }} DT</h3>
+        </div>
+    </div>
+
+    <!-- Net Profit -->
+    <div class="col-md-3">
+        <div class="card shadow text-center p-3">
+            <h6>Net Profit</h6>
+            <h3 class="{% if net_profit >=0 %}text-primary{% else %}text-danger{% endif %}">
+                {{ net_profit|round(2) }} DT
+            </h3>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<!-- Monthly Profit Chart -->
+<div class="card shadow p-4 mb-4">
+    <h5>📊 Monthly Profit (Last 12 Months)</h5>
+    <canvas id="profitChart"></canvas>
+</div>
+
+<hr>
+
+<!-- Products Overview -->
+<div class="card shadow p-4">
+    <h5>🛒 Products Overview</h5>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Units Sold</th>
+                <th>Revenue (DT)</th>
+                <th>Cost per Product (DT)</th>
+                <th>Profit per Product (DT)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ p.name }}</td>
+                <td>{{ p.total_sold }}</td>
+                <td>{{ (p.total_sold * p.sell_price)|round(2) }}</td>
+                <td>{{ p.cost_per_product|round(2) }}</td>
+                <td>{{ ((p.total_sold * p.sell_price) - (p.total_sold * p.cost_per_product))|round(2) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">No products sold yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+const ctx = document.getElementById('profitChart').getContext('2d');
+const data = {{ chart_data|tojson }};
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: data.labels,       // ["Jan", "Feb", ...]
+        datasets: [{
+            label: 'Profit (DT)',
+            data: data.values,     // [1200, 900, ...]
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13,110,253,0.2)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: true },
+            tooltip: { mode: 'index', intersect: false }
+        },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+
+{% endblock %}

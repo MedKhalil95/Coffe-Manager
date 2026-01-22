@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: coffee-manager
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        value: "super-secret-production-key"
+      - key: DATABASE_URL
+        value: "sqlite:///coffee_manager.db"  # For SQLite
+  # Optional PostgreSQL database
+  - type: postgresql
+    name: coffee-manager-db
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: DATABASE_URL

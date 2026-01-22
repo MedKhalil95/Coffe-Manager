@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Record Sale: {{ product.name }}</h4>
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Quantity Sold</label>
+        <input type="number" name="quantity" class="form-control" min="1" required>
+    </div>
+    <div class="col-12">
+        <button class="btn btn-success">Record Sale</button>
+        <a href="{{ url_for('products.list_products') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}
