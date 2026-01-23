@@ -1,34 +1,26 @@
+<!-- dashboard.html - Updated version -->
 {% extends "base.html" %}
 {% block content %}
 
 <div class="row g-4 mb-4">
-
     <!-- Total Revenue -->
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card shadow text-center p-3">
             <h6>Total Revenue</h6>
             <h3 class="text-success">{{ total_sales|round(2) }} DT</h3>
         </div>
     </div>
 
-    <!-- Total Product Costs -->
-    <div class="col-md-3">
-        <div class="card shadow text-center p-3">
-            <h6>Total Product Costs</h6>
-            <h3 class="text-warning">{{ total_costs - (total_fixed_costs|default(0))|round(2) }} DT</h3>
-        </div>
-    </div>
-
     <!-- Total Fixed Costs -->
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card shadow text-center p-3">
             <h6>Total Fixed Costs</h6>
-            <h3 class="text-danger">{{ total_costs - (total_costs - (total_fixed_costs|default(0)))|round(2) }} DT</h3>
+            <h3 class="text-danger">{{ total_fixed_costs|round(2) }} DT</h3>
         </div>
     </div>
 
     <!-- Net Profit -->
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card shadow text-center p-3">
             <h6>Net Profit</h6>
             <h3 class="{% if net_profit >=0 %}text-primary{% else %}text-danger{% endif %}">
@@ -58,8 +50,7 @@
                 <th>Product</th>
                 <th>Units Sold</th>
                 <th>Revenue (DT)</th>
-                <th>Cost per Product (DT)</th>
-                <th>Profit per Product (DT)</th>
+                <th>Profit Contribution (DT)</th>
             </tr>
         </thead>
         <tbody>
@@ -69,12 +60,17 @@
                 <td>{{ p.name }}</td>
                 <td>{{ p.total_sold }}</td>
                 <td>{{ (p.total_sold * p.sell_price)|round(2) }}</td>
-                <td>{{ p.cost_per_product|round(2) }}</td>
-                <td>{{ ((p.total_sold * p.sell_price) - (p.total_sold * p.cost_per_product))|round(2) }}</td>
+                <td>
+                    {% if total_sales > 0 %}
+                        {{ ((p.total_sold * p.sell_price / total_sales) * net_profit)|round(2) }}
+                    {% else %}
+                        0.00
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="text-center">No products sold yet.</td>
+                <td colspan="5" class="text-center">No products sold yet.</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -88,10 +84,10 @@ const data = {{ chart_data|tojson }};
 new Chart(ctx, {
     type: 'line',
     data: {
-        labels: data.labels,       // ["Jan", "Feb", ...]
+        labels: data.labels,
         datasets: [{
             label: 'Profit (DT)',
-            data: data.values,     // [1200, 900, ...]
+            data: data.values,
             borderColor: '#0d6efd',
             backgroundColor: 'rgba(13,110,253,0.2)',
             fill: true,

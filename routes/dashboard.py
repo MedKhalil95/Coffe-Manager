@@ -1,4 +1,4 @@
-# routes/dashboard.py - Simplified version
+# routes/dashboard.py - Updated version without cost per product coefficient
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from models import db, Product, Sale, FixedCost
@@ -18,33 +18,32 @@ def dashboard():
     sales = Sale.query.filter_by(admin_id=admin_id).all()
     fixed_costs = FixedCost.query.filter_by(admin_id=admin_id).all()
     
-    # Calculate total revenue
+    # Calculate total revenue (all sales)
     total_sales = sum(sale.quantity * sale.product.sell_price for sale in sales)
     
-    # Simplified: Assume fixed cost per product is 30% of sell price
-    # You can adjust this as needed
-    total_product_costs = sum(sale.quantity * (sale.product.sell_price * 0.3) for sale in sales)
-    
-    # Total fixed costs
+    # Total fixed costs (only actual recorded costs)
     total_fixed_costs = sum(cost.amount for cost in fixed_costs)
     
-    total_costs = total_product_costs + total_fixed_costs
+    # Total costs = only fixed costs (no product cost coefficient)
+    total_costs = total_fixed_costs
+    
+    # Net profit = total sales - total fixed costs
     net_profit = total_sales - total_costs
     
-    # Prepare products overview
+    # Prepare products overview - WITHOUT cost per product
     products_data = []
     for product in products:
         total_sold = sum(s.quantity for s in product.sales if s.admin_id == admin_id)
-        cost_per_product = product.sell_price * 0.3  # 30% cost assumption
         
         products_data.append({
             'name': product.name,
             'total_sold': total_sold,
             'sell_price': product.sell_price,
-            'cost_per_product': cost_per_product
+            # Remove cost_per_product since we don't use it anymore
         })
     
-    # Simple chart data
+    # Simple chart data (last 6 months profit)
+    # For simplicity, using static data - you can implement actual monthly data later
     chart_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
     chart_values = [1000, 1200, 800, 1500, 2000, 1800]
     
