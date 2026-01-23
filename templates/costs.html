@@ -1,68 +1,216 @@
-<!-- templates/costs.html - CORRECTED VERSION -->
+<!-- templates/costs.html - Updated with unit price and quantity -->
 {% extends "base.html" %}
 {% block content %}
-<h4>Fixed Costs</h4>
+<h4>💰 Fixed Costs Management</h4>
 
-<!-- Form submits to the SAME URL (list_costs) which handles POST -->
-<form method="POST" action="{{ url_for('costs.list_costs') }}" class="row g-3 mb-4">
-    <div class="col-md-6">
-        <label class="form-label">Cost Name</label>
-        <input type="text" name="name" class="form-control" placeholder="e.g., Rent, Electricity" required>
+<!-- Add New Cost Form -->
+<form method="POST" action="{{ url_for('costs.list_costs') }}" class="row g-3 mb-4 p-4 border rounded shadow-sm bg-light">
+    <div class="col-md-3">
+        <label class="form-label">Cost Name *</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g., Coffee Beans, Rent, Electricity" required>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Amount (DT)</label>
-        <input type="number" step="0.01" name="amount" class="form-control" placeholder="0.00" min="0" required>
+    <div class="col-md-2">
+        <label class="form-label">Unit Price (DT) *</label>
+        <input type="number" step="0.01" name="unit_price" class="form-control" placeholder="0.00" min="0" required>
+        <small class="text-muted">Price per unit</small>
     </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-success">
-            <i class="fas fa-plus"></i> Add Cost
+    <div class="col-md-2">
+        <label class="form-label">Quantity</label>
+        <input type="number" step="0.01" name="quantity" class="form-control" placeholder="1" min="0" value="1">
+        <small class="text-muted">Number of units</small>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-select">
+            {% for category in categories %}
+            <option value="{{ category }}">{{ category }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3 align-self-end">
+        <button type="submit" class="btn btn-success w-100">
+            <i class="fas fa-calculator"></i> Add & Calculate
         </button>
     </div>
 </form>
 
+<!-- Cost Summary -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h6 class="text-muted">Total Items</h6>
+                        <h3 class="text-primary">{{ fixed_costs|length }}</h3>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h6 class="text-muted">Total Quantity</h6>
+                        <h3 class="text-warning">
+                            {{ "%.2f"|format(fixed_costs|sum(attribute='quantity')) }}
+                        </h3>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h6 class="text-muted">Total Cost</h6>
+                        <h3 class="text-danger">{{ "%.2f"|format(total_all_costs) }} DT</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Summary -->
+{% if category_totals %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h5>📊 Costs by Category</h5>
+        <div class="row g-3">
+            {% for category, total in category_totals.items() %}
+            <div class="col-md-3 col-sm-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate">{{ category }}</h6>
+                        <h4 class="text-primary">{{ "%.2f"|format(total) }} DT</h4>
+                        <small class="text-muted">
+                            {% set category_items = fixed_costs|selectattr('category', 'equalto', category)|list %}
+                            {{ category_items|length }} item(s)
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Detailed Costs Table -->
+<h5 class="mt-4">📋 All Fixed Costs</h5>
 {% if fixed_costs %}
-<table class="table table-striped table-hover shadow">
-    <thead class="table-dark">
-        <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Amount (DT)</th>
-            <th>Date</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for cost in fixed_costs %}
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ cost.name }}</td>
-            <td>{{ "%.2f"|format(cost.amount) }}</td>
-            <td>{{ cost.date.strftime('%d-%m-%Y') }}</td>
-            <td>
-                <a href="{{ url_for('costs.edit_cost', cost_id=cost.id) }}" 
-                   class="btn btn-sm btn-warning">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <a href="{{ url_for('costs.delete_cost', cost_id=cost.id) }}" 
-                   class="btn btn-sm btn-danger"
-                   onclick="return confirm('Are you sure you want to delete \"{{ cost.name }}\"?');">
-                    <i class="fas fa-trash"></i> Delete
-                </a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-    <tfoot>
-        <tr class="table-info">
-            <td colspan="2"><strong>Total:</strong></td>
-            <td><strong>{{ "%.2f"|format(fixed_costs|sum(attribute='amount')) }} DT</strong></td>
-            <td colspan="2"></td>
-        </tr>
-    </tfoot>
-</table>
+<div class="table-responsive">
+    <table class="table table-striped table-hover shadow">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Cost Name</th>
+                <th>Category</th>
+                <th>Unit Price</th>
+                <th>Quantity</th>
+                <th>Total Cost</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cost in fixed_costs %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ cost.name }}</strong></td>
+                <td>
+                    <span class="badge bg-info text-dark">{{ cost.category }}</span>
+                </td>
+                <td class="text-end">{{ "%.2f"|format(cost.unit_price) }} DT</td>
+                <td class="text-center">{{ "%.2f"|format(cost.quantity) }}</td>
+                <td class="text-end fw-bold text-danger">{{ "%.2f"|format(cost.total_amount) }} DT</td>
+                <td>{{ cost.date.strftime('%d-%m-%Y') }}</td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{{ url_for('costs.edit_cost', cost_id=cost.id) }}" 
+                           class="btn btn-warning">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('costs.delete_cost', cost_id=cost.id) }}" 
+                           class="btn btn-danger"
+                           onclick="return confirm('Delete {{ cost.name }}?');">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot class="table-primary">
+            <tr>
+                <td colspan="4" class="text-end"><strong>Grand Total:</strong></td>
+                <td class="text-center fw-bold">{{ "%.2f"|format(fixed_costs|sum(attribute='quantity')) }}</td>
+                <td class="text-end fw-bold">{{ "%.2f"|format(total_all_costs) }} DT</td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
 {% else %}
 <div class="alert alert-info">
     <i class="fas fa-info-circle"></i> No fixed costs recorded yet. Add your first cost above.
 </div>
 {% endif %}
+
+<!-- Cost Calculation Examples -->
+<div class="card mt-4 shadow-sm">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="fas fa-lightbulb"></i> How to Use</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>Example 1: Monthly Rent</h6>
+                <ul class="list-unstyled">
+                    <li>Name: <code>Shop Rent</code></li>
+                    <li>Unit Price: <code>1500.00 DT</code></li>
+                    <li>Quantity: <code>1</code> (month)</li>
+                    <li>Total: <code>1500.00 DT</code></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6>Example 2: Coffee Beans</h6>
+                <ul class="list-unstyled">
+                    <li>Name: <code>Arabica Coffee Beans</code></li>
+                    <li>Unit Price: <code>50.00 DT</code> (per kg)</li>
+                    <li>Quantity: <code>10</code> (kg)</li>
+                    <li>Total: <code>500.00 DT</code></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6>Example 3: Electricity</h6>
+                <ul class="list-unstyled">
+                    <li>Name: <code>Monthly Electricity</code></li>
+                    <li>Unit Price: <code>0.500 DT</code> (per kWh)</li>
+                    <li>Quantity: <code>300</code> (kWh)</li>
+                    <li>Total: <code>150.00 DT</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Calculation -->
+<div class="card mt-3 shadow-sm">
+    <div class="card-body">
+        <h6><i class="fas fa-calculator"></i> Quick Calculator</h6>
+        <div class="row g-3 mt-2">
+            <div class="col-md-4">
+                <input type="number" step="0.01" id="calcUnitPrice" class="form-control" placeholder="Unit Price (DT)">
+            </div>
+            <div class="col-md-4">
+                <input type="number" step="0.01" id="calcQuantity" class="form-control" placeholder="Quantity">
+            </div>
+            <div class="col-md-4">
+                <button onclick="calculateTotal()" class="btn btn-outline-primary w-100">Calculate</button>
+            </div>
+        </div>
+        <div class="mt-3 text-center">
+            <h5 id="calcResult" class="text-success">Total: 0.00 DT</h5>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculateTotal() {
+    const unitPrice = parseFloat(document.getElementById('calcUnitPrice').value) || 0;
+    const quantity = parseFloat(document.getElementById('calcQuantity').value) || 0;
+    const total = unitPrice * quantity;
+    document.getElementById('calcResult').textContent = 'Total: ' + total.toFixed(2) + ' DT';
+}
+</script>
 {% endblock %}

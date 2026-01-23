@@ -1,18 +1,111 @@
+<!-- templates/edit_cost.html - Updated with unit price and quantity -->
 {% extends "base.html" %}
 {% block content %}
-<h4>Edit Cost</h4>
-<form method="POST" class="row g-3">
-    <div class="col-md-6">
-        <label class="form-label">Name</label>
-        <input type="text" name="name" value="{{ cost.name }}" class="form-control" required>
+<div class="row">
+    <div class="col-md-8">
+        <h4>✏️ Edit Cost: {{ cost.name }}</h4>
+        
+        <form method="POST" class="row g-3 p-4 border rounded shadow-sm bg-light">
+            <div class="col-md-6">
+                <label class="form-label">Cost Name *</label>
+                <input type="text" name="name" value="{{ cost.name }}" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-select">
+                    {% for category in categories %}
+                    <option value="{{ category }}" {% if category == cost.category %}selected{% endif %}>
+                        {{ category }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Unit Price (DT) *</label>
+                <div class="input-group">
+                    <input type="number" step="0.01" name="unit_price" value="{{ cost.unit_price }}" 
+                           class="form-control" placeholder="0.00" min="0" required>
+                    <span class="input-group-text">DT/unit</span>
+                </div>
+                <small class="text-muted">Price per unit</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Quantity</label>
+                <div class="input-group">
+                    <input type="number" step="0.01" name="quantity" value="{{ cost.quantity }}" 
+                           class="form-control" placeholder="1" min="0">
+                    <span class="input-group-text">units</span>
+                </div>
+                <small class="text-muted">Number of units</small>
+            </div>
+            <div class="col-12 mt-3">
+                <div class="alert alert-info">
+                    <strong>Calculation:</strong> 
+                    {{ "%.2f"|format(cost.unit_price) }} DT × {{ "%.2f"|format(cost.quantity) }} units = 
+                    <span class="fw-bold">{{ "%.2f"|format(cost.total_amount) }} DT</span>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('costs.list_costs') }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Amount (DT)</label>
-        <input type="number" step="0.01" name="amount" value="{{ cost.amount }}" class="form-control" required>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Cost Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Created Date:</small>
+                    <p class="fw-bold">{{ cost.date.strftime('%d %b %Y') }}</p>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Current Category:</small>
+                    <p><span class="badge bg-info">{{ cost.category }}</span></p>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Current Calculation:</small>
+                    <div class="card bg-light">
+                        <div class="card-body p-2">
+                            <table class="table table-sm mb-0">
+                                <tr>
+                                    <td>Unit Price:</td>
+                                    <td class="text-end">{{ "%.2f"|format(cost.unit_price) }} DT</td>
+                                </tr>
+                                <tr>
+                                    <td>Quantity:</td>
+                                    <td class="text-end">{{ "%.2f"|format(cost.quantity) }}</td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <td><strong>Total:</strong></td>
+                                    <td class="text-end fw-bold">{{ "%.2f"|format(cost.total_amount) }} DT</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3 shadow-sm">
+            <div class="card-body">
+                <h6>Quick Tips</h6>
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check text-success"></i> Unit Price = Price per item/unit</li>
+                    <li><i class="fas fa-check text-success"></i> Quantity = Number of units</li>
+                    <li><i class="fas fa-check text-success"></i> Total = Unit Price × Quantity</li>
+                </ul>
+            </div>
+        </div>
     </div>
-    <div class="col-12">
-        <button class="btn btn-success">Save</button>
-        <a href="{{ url_for('costs.list_costs') }}" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+</div>
 {% endblock %}

@@ -1,4 +1,4 @@
-# models.py - Remove User class completely
+# models.py - Updated with unit_price and quantity fields
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -28,7 +28,7 @@ class Admin(UserMixin, db.Model):
 # -------- PRODUCT --------
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(150), nullable=False, unique=True)  # Unique per admin
+    name = db.Column(db.String(150), nullable=False, unique=True)
     sell_price = db.Column(db.Float, nullable=False)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False, default=1)
     
@@ -47,6 +47,13 @@ class Sale(db.Model):
 class FixedCost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
+    unit_price = db.Column(db.Float, nullable=False)  # Price per unit
+    quantity = db.Column(db.Float, nullable=False, default=1)  # Number of units
+    category = db.Column(db.String(100), nullable=False, default='General')
     date = db.Column(db.DateTime, default=datetime.utcnow)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False, default=1)
+    
+    # Property to calculate total amount
+    @property
+    def total_amount(self):
+        return self.unit_price * self.quantity

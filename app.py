@@ -56,9 +56,38 @@ def direct_costs():
     """Direct route to costs for testing"""
     return redirect(url_for('costs.list_costs'))
 # -------- INIT DB & CREATE DEFAULT ADMINS --------
+# app.py - Add this after db.create_all()
 with app.app_context():
     db.create_all()
-
+    
+    # Check and handle schema changes
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        columns = [col['name'] for col in inspector.get_columns('fixed_cost')]
+        
+        # If old 'amount' column exists, we need to migrate
+        if 'amount' in columns and 'unit_price' not in columns:
+            print("Migrating old cost data...")
+            # In a production app, use Alembic migrations
+            # For development, we can handle it like this:
+            try:
+                # Get all existing costs
+                costs = FixedCost.query.all()
+                for cost in costs:
+                    # Convert old amount to unit_price with quantity=1
+                    if hasattr(cost, 'amount'):
+                        cost.unit_price = cost.amount
+                        cost.quantity = 1
+                db.session.commit()
+                print("Migration completed successfully!")
+            except Exception as e:
+                print(f"Migration error: {e}")
+                db.session.rollback()
+    except Exception as e:
+        print(f"Schema check error: {e}")
+    
+    # ... rest of your default admin creation code ...
     # List of default admins
     default_admins = [
         {"username": "admin1", "password": "pass123", "full_name": "Alice"},

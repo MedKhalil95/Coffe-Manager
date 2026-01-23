@@ -22,7 +22,9 @@ def dashboard():
     total_sales = sum(sale.quantity * sale.product.sell_price for sale in sales)
     
     # Total fixed costs (only actual recorded costs)
-    total_fixed_costs = sum(cost.amount for cost in fixed_costs)
+    # In dashboard.py, update the costs calculation:
+# Total fixed costs (using the new calculation)
+    total_fixed_costs = sum(cost.unit_price * cost.quantity for cost in fixed_costs)
     
     # Total costs = only fixed costs (no product cost coefficient)
     total_costs = total_fixed_costs
